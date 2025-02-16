@@ -1,12 +1,15 @@
-from machine import Pin
+from machine import Pin, UART
 import utime
 # import umqtt.simple import MQTTClient # type: ignore
-import network
+#import network
+import os
+import json
 
-wlan = network.WLAN(network.STA_IF)
-wlan.active(True)
-ssid = "AccessOU"
-password = ""
+#wlan = network.WLAN(network.STA_IF)
+#wlan.active(True)
+#ssid = "AccessOU"
+#password = ""
+uart = UART(0, 115200)
 
 #mqtt_server = ""
 #mqtt_port = 1883
@@ -194,23 +197,47 @@ def redraw_lcd():
         goto_position(row_col_to_pos(0, 0))
         printmsg("NOTIF:")
 
-def init_network():
-    goto_position(row_col_to_pos(0, 0))
-    printmsg("Connecting to")
+def initital_lcd_state():
     goto_position(row_col_to_pos(1, 0))
-    printmsg("Wi-Fi...")
-    utime.sleep(0.5)
-    wlan.connect(ssid, password)
-    while not wlan.isconnected():
-        utime.sleep(1)
-    goto_position(row_col_to_pos(0, 0))
-    printmsg("Connected")
+    item = todo_list[0]
+    if item["completed"]:
+        write_lcd_data(0, 1)
+    else:
+        write_lcd_data(1, 1)
+    goto_position(row_col_to_pos(1, 1))
+    printmsg(item["title"])
+
+# def update_list_from_pi():
+#     global todo_list
+
+#     uart.write("get_list".encode('utf-8'))
+#     while uart.any() == 0:
+#         pass
+#     data = uart.read()
+#     data = list(eval(data.decode('utf-8')))
+#     print(data)
+#     todo_list = []
+#     for i in range(0, len(data)):
+#         todo_list.append(json.loads(data[i]))
+
+# def init_network():
+#     goto_position(row_col_to_pos(0, 0))
+#     printmsg("Connecting to")
+#     goto_position(row_col_to_pos(1, 0))
+#     printmsg("Wi-Fi...")
+#     utime.sleep(0.5)
+#     wlan.connect(ssid, password)
+#     while not wlan.isconnected():
+#         utime.sleep(1)
+#     goto_position(row_col_to_pos(0, 0))
+#     printmsg("Connected")
 
 def main():
     init_interrupts()
     init_lcd()
-    init_network()
+    #init_network()
     redraw_lcd()
+    initital_lcd_state()
 
     while(1):
         global cat_flag
@@ -221,7 +248,11 @@ def main():
         current_item = todo_list[0]
 
         if cat_flag == 1:
-            pass #Future implementation
+            # utime.sleep(0.1)
+            # cat_flag = 0
+            # update_list_from_pi()
+            # utime.sleep(0.5)
+            pass
         elif left_flag == 1:
             redraw_lcd()
             left_flag = 0
@@ -255,7 +286,7 @@ def main():
             printmsg(item["title"])
         else:
             if len(current_item["title"]) > 15:
-                scroll_message(current_item["title"], 15, 0.4, (1, 1), spacing = 3)
+                scroll_message(current_item["title"], 15, 0.3, (1, 1), spacing = 3)
             for i in range(0, 15):
                 if irq_flag == 1:
                     break
